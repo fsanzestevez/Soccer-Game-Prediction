@@ -6,22 +6,135 @@ Created on Thu Aug  6 13:53:36 2020
 """
 
 import pandas as pd
-import fuzzywuzzy
+import numpy as np
+from fuzzywuzzy import process
 import json
 import os 
+
+import winsound
+frequency = 2500  # Set Frequency To 2500 Hertz
+duration = 100  # Set Duration To 1000 ms == 1 second
+debug = False
 
 class CreateDB():
     
     def __init__(self, folder):
         self.folder = folder
         self.uniquePlayers = set()
-        self.player2id = dict()
-        self.lineupsDB = self.loadData()
+        self.player2id = {'Chicharito': 178224,
+                          'Nolito': 199561 }
+        self.eplClubs = {'QPR': 'Queens Park Rangers'}
+        self.notFound = set()
+        self.fullDB = self.loadData()
+        self.fullDB.to_pickle('data/full_DB.pkl')
+        
+    def getSeasonDB(self, lineups, odds, players_Fifa):
+        clubs = list(lineups['Team'].unique()) \
+                + list(odds['HomeTeam'].unique())
+        clubs = set(clubs)
+        # NaN != NaN, so we remove NaN quickly.
+        clubs = {x for x in clubs if x==x} 
+        for club in clubs:
+            if club in self.eplClubs:
+                newClub = self.eplClubs[club]
+                print(club, 'found in dict. New Club is', newClub)
+            else:
+                newClub = process.extractOne(club,
+                                             players_Fifa['club'].unique())[0]
+                self.eplClubs[club] = newClub
+            if club != newClub:
+                lineups.loc[lineups['Team'] == club,
+                            'Team'] = newClub
+                odds.loc[odds['HomeTeam'] == club, 'HomeTeam'] = newClub
+                odds.loc[odds['AwayTeam'] == club, 'AwayTeam'] = newClub
+        odds['Date'] = pd.to_datetime(odds['Date'])
+        lineups['Date'] = pd.to_datetime(lineups['Date'])
+        
+        seasonDB = odds.merge(lineups, how='left',
+                              left_on=['Date', 'HomeTeam'],
+                              right_on=['Date', 'Team'],
+                              suffixes=[None,'_Home'])
+        seasonDB = seasonDB.merge(lineups, how='left',
+                                  left_on=['Date', 'AwayTeam'],
+                                  right_on=['Date', 'Team'],
+                                  suffixes=[None, '_Away'])
+        return seasonDB
+                  
     
-    @staticmethod
-    def seasonLineups(df, d, players_Fifa):
+    def findPlayer(self, player, club, players_Fifa):
+        if player in self.player2id:
+            if self.player2id[player] == -1:
+                return np.nan
+
+            print('Found in dict', player)
+            print(self.player2id[player])
+            playerFifa = players_Fifa[players_Fifa['sofifa_id'] == \
+                                      self.player2id[player]]
+            print('Uno')
+            try:
+                overall = int(playerFifa['overall'])
+            except TypeError: # ID not found in fifa dataset
+                overall = np.nan
+            return overall
+        else:
+            print(player)
+            if club in self.eplClubs:
+                club = self.eplClubs[club]
+                print('Found club', club)
+            else:
+                newClub = process.extractOne(club,
+                                          players_Fifa['club'].unique())[0]
+                self.eplClubs[club] = newClub
+                club = newClub
+            
+            clubDF = players_Fifa[players_Fifa['club'] == club]
+            name, ratio, _ = process.extractOne(player, clubDF['long_name'])
+            playerFifa = clubDF[clubDF['long_name'] == name]
+
+            if (len(playerFifa) != 1) or ratio < 75:
+                if ratio < 75:
+                    print('ratio:', ratio) 
+                playerFifa = players_Fifa[players_Fifa['long_name'] == player]
+            
+            if len(playerFifa) == 1:
+                self.player2id[player] = int(playerFifa['sofifa_id'])
+                print('Dos')
+                return int(playerFifa['overall'])
+            
+            if len(playerFifa) != 1:
+                print(player, 'fuzzy wuzzy')
+                best = process.extractOne(player,
+                                               players_Fifa['long_name'])[0]
+                playerFifa = players_Fifa[players_Fifa['long_name'] == best]
+                
+                if len(playerFifa) == 1:
+                    self.player2id[player] = int(playerFifa['sofifa_id'])
+                    print('Tres')
+                    return int(playerFifa['overall'])
+                
+                if len(playerFifa) > 1:
+                    print(player, 'club')
+                    club = process.extractOne(club,
+                                               players_Fifa['club'])[0]
+                    playerFifa = playerFifa[playerFifa['club'] == club]
+                    if len(playerFifa) == 1:
+                        self.player2id[player] = int(playerFifa['sofifa_id'])
+                        print('Cuatro')
+                        return int(playerFifa['overall'])
+                if len(playerFifa) != 1:
+                    print(player, '\n' + best)
+                    print(club)
+                    print(playerFifa)
+                    self.player2id[player] = -1
+                    self.notFound.add((player, best, club))
+                    return np.nan
+            
+        return np.nan
+                
+        
+    def seasonLineups(self, df, d, players_Fifa):
         '''
-        This static method receives a JSON object (dict) and an empty base 
+        This method receives a JSON object (dict) and an empty base 
         DataFrame which it will be filling with the relevant data from the 
         JSON object
     
@@ -43,25 +156,31 @@ class CreateDB():
             each game.
     
         '''
-
-        lineups = df.copy()    
+        winsound.Beep(frequency, duration)
+        lineups = df.copy()
         for game_id in d.keys():
-            
             game = d[game_id]
             for team_id in game.keys():
+
                 team = game[team_id]
                 date = team['team_details']['date']
                 team_name = team['team_details']['team_name']
-                players_lst = []
                 plyr_sts = team['Player_stats']
+                game_dict = {'Date': date, 
+                             'Team': team_name}
+                i = 1
                 for player, stats in plyr_sts.items():
                     place = int(stats['Match_stats']['formation_place'])
                     if place:
-                        players_lst.append(player)
+                        game_dict['Player_'+str(i)] = player
+                        overall = self.findPlayer(player, team_name,
+                                                  players_Fifa)
+                        game_dict['P_'+str(i)+'_Overall'] = overall
+  
+                        self.uniquePlayers.add((player, team_name))
+                        i += 1
+                lineups = lineups.append(game_dict, ignore_index=True)
 
-                lineups = lineups.append({'Date': date, 'Team': team_name},
-                                         ignore_index=True)
-    
         return lineups
     
     def loadData(self):
@@ -74,62 +193,48 @@ class CreateDB():
             DESCRIPTION.
     
         '''
-        cols = ['Date', 'Team', 'Player_1', 'Player_2', 'Player_3', 'Player_4',
-                'Player_5', 'Player_6', 'Player_7', 'Player_8', 'Player_9',
-                'Player_10', 'Player_11']
-        lineups = pd.DataFrame(columns=cols)
-        for (root, dirs, files) in os.walk(self.folder):
-            for f in files:
-                if f == 'season_stats.json':
-                    path = root + '/' + f
-                    d = json.load(open(path, 'r', encoding='utf-8'))
-                    players = pd.read_csv(root+'/players_'+root[-2:]+'.csv')
-                    lineups = self.seasonLineups(lineups, d, players)
+        # cols = ['Date', 'Team']
+        # for i in range(1, 12):
+        #     cols.append('Player_'+str(i))
+        #     cols.append('P_'+str(i)+'_Overall')
+        # lineups = pd.DataFrame(columns=cols)
+        lineups = pd.DataFrame()
+        lineupsDB = lineups.copy()
+        seasonDB = pd.DataFrame()
+        fullDB = pd.DataFrame()
+        if debug:
+            d = json.load(open('data/season14-15/season_stats.json', 'r',
+                               encoding='utf-8'))
+            players = pd.read_csv('data/season14-15/players_15.csv')
+            odds = pd.read_csv('data/season14-15/EPL_14-15.csv')
+            lineups = self.seasonLineups(lineups, d, players)
+            seasonDB = self.getSeasonDB(lineups, odds,
+                                                    players)
+                        
+            fullDB = fullDB.append(seasonDB)
+        else:
+            for (root, dirs, files) in os.walk(self.folder):
+                for f in files:
+                    if f == 'season_stats.json':
+                        path = root + '/' + f
+                        d = json.load(open(path, 'r', encoding='utf-8'))
+                        print(root)
+                        players = pd.read_csv(root+'/players_'+root[-2:]+'.csv')
+                        odds = pd.read_csv(root+'/EPL_'+root[-5:]+'.csv')
+                        lineups = self.seasonLineups(lineups, d, players)
 
-        
-        return lineups
+                        seasonDB = self.getSeasonDB(lineups, odds,
+                                                    players)
+                        
+                        fullDB = fullDB.append(seasonDB)
+        fullDB.reset_index(inplace=True)    
+        return fullDB
+               
 
-       
-    def downloadResults(self, start = 14, end = 18): 
-        league = '/E0' # EPL
-
-        link = 'https://www.football-data.co.uk/mmz4281/'
-       
-        for year in range(start, end):
-            season = str(year) + str(year+1)
-
-            download = pd.read_csv(link + season + league + '.csv')
-            download.to_csv(self.folder + '/season' + str(year) + str(year+1) \
-                            + '/results.csv')
-    
-    def playersDB(self):
-
-        playersDB = pd.DataFrame(columns = ['sofifa_id'])
-        
-        for (root, dirs, files) in os.walk(self.folder):
-            for f in files:
-                if f.startswith('players_'):
-                    path = root + '/' + f
-                    players_year = pd.read_csv(path)
-    
-                    colDict = dict()
-                    dont_rename = ['sofifa_id', 'dob']
-                    for col in players_year.columns:
-                        if col in dont_rename:
-                            pass
-                        else:
-                            colDict[col] = col + year 
-                    players_year.rename(columns=colDict, inplace=True)
-                    playersDB = pd.merge(playersDB, players_year, how='outer', 
-                                         on='sofifa_id')
-            
-        self.playersDB = playersDB
-        return 
-                
                 
 for (root, dirs, files) in os.walk('data'):
     print('root', root)
-    print('season', root[-2:])
+    print('season', root[-5:])
     print('dirs', dirs)
     print('files', files)                
                 
