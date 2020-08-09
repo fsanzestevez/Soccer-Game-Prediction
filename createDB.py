@@ -37,7 +37,7 @@ class CreateDB():
         for club in clubs:
             if club in self.eplClubs:
                 newClub = self.eplClubs[club]
-                print(club, 'found in dict. New Club is', newClub)
+
             else:
                 newClub = process.extractOne(club,
                                              players_Fifa['club'].unique())[0]
@@ -66,21 +66,20 @@ class CreateDB():
             if self.player2id[player] == -1:
                 return np.nan
 
-            print('Found in dict', player)
-            print(self.player2id[player])
+
             playerFifa = players_Fifa[players_Fifa['sofifa_id'] == \
                                       self.player2id[player]]
-            print('Uno')
+
             try:
                 overall = int(playerFifa['overall'])
             except TypeError: # ID not found in fifa dataset
                 overall = np.nan
             return overall
         else:
-            print(player)
+
             if club in self.eplClubs:
                 club = self.eplClubs[club]
-                print('Found club', club)
+
             else:
                 newClub = process.extractOne(club,
                                           players_Fifa['club'].unique())[0]
@@ -92,39 +91,31 @@ class CreateDB():
             playerFifa = clubDF[clubDF['long_name'] == name]
 
             if (len(playerFifa) != 1) or ratio < 75:
-                if ratio < 75:
-                    print('ratio:', ratio) 
                 playerFifa = players_Fifa[players_Fifa['long_name'] == player]
             
             if len(playerFifa) == 1:
                 self.player2id[player] = int(playerFifa['sofifa_id'])
-                print('Dos')
+
                 return int(playerFifa['overall'])
             
             if len(playerFifa) != 1:
-                print(player, 'fuzzy wuzzy')
                 best = process.extractOne(player,
                                                players_Fifa['long_name'])[0]
                 playerFifa = players_Fifa[players_Fifa['long_name'] == best]
                 
                 if len(playerFifa) == 1:
                     self.player2id[player] = int(playerFifa['sofifa_id'])
-                    print('Tres')
                     return int(playerFifa['overall'])
                 
                 if len(playerFifa) > 1:
-                    print(player, 'club')
                     club = process.extractOne(club,
                                                players_Fifa['club'])[0]
                     playerFifa = playerFifa[playerFifa['club'] == club]
                     if len(playerFifa) == 1:
                         self.player2id[player] = int(playerFifa['sofifa_id'])
-                        print('Cuatro')
                         return int(playerFifa['overall'])
+                    
                 if len(playerFifa) != 1:
-                    print(player, '\n' + best)
-                    print(club)
-                    print(playerFifa)
                     self.player2id[player] = -1
                     self.notFound.add((player, best, club))
                     return np.nan
@@ -199,7 +190,6 @@ class CreateDB():
         #     cols.append('P_'+str(i)+'_Overall')
         # lineups = pd.DataFrame(columns=cols)
         lineups = pd.DataFrame()
-        lineupsDB = lineups.copy()
         seasonDB = pd.DataFrame()
         fullDB = pd.DataFrame()
         if debug:
@@ -218,7 +208,7 @@ class CreateDB():
                     if f == 'season_stats.json':
                         path = root + '/' + f
                         d = json.load(open(path, 'r', encoding='utf-8'))
-                        print(root)
+
                         players = pd.read_csv(root+'/players_'+root[-2:]+'.csv')
                         odds = pd.read_csv(root+'/EPL_'+root[-5:]+'.csv')
                         lineups = self.seasonLineups(lineups, d, players)
@@ -231,13 +221,6 @@ class CreateDB():
         return fullDB
                
 
-                
-for (root, dirs, files) in os.walk('data'):
-    print('root', root)
-    print('season', root[-5:])
-    print('dirs', dirs)
-    print('files', files)                
-                
                 
                 
                 

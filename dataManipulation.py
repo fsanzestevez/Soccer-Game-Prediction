@@ -12,14 +12,25 @@ from pandas.api.types import is_numeric_dtype
 
 
 class DataManipulation():
-    def __init__(self, data):
-        data, cols = self.removeGameStatistics(data)
-        self.delCols = cols
-        data = self.removeNames(data)
-        data, cols = self.removeEmpty(data)
-        self.delCols += cols
-        
-        data, self.imputeDict = self.imputeMissing(data)
+    def __init__(self, data, target='FTR', train=True):
+
+        if train:
+            data, cols = self.removeGameStatistics(data)
+            self.delCols = cols
+            data, cols = self.removeNames(data)
+            self.delCols += cols
+            data, cols = self.removeEmpty(data)
+            self.delCols += cols
+            
+            data, self.imputeDict = self.imputeMissing(data, target)
+            
+            self.y_train = data[target].copy()
+            self.x_train = data.drop(labels=target, axis=1, inplace=False)
+        else:
+            data.drop(labels=self.delCols, axis=1, inplace=True)
+            data, _ = self.imputeMissing(data, target, self.imputeDict)
+            self.y_test = data[target].copy()
+            self.x_test = data.drop(labels=target, axis=1, inplace=False)
         
     
     def removeGameStatistics(data, ht=True):
@@ -71,15 +82,22 @@ class DataManipulation():
         -------
         data : TYPE pandas.DataFrame
             DESCRIPTION. data without players' names
+        cols : TYPE list
+            DESCRIPTION. columns that have been deleted, therefore will need
+            to be deleted in the test set
 
         '''
-        [data.drop(labels=x, axis=1, inplace=True) for x in data.columns \
-         if str(x).startswith('Player')]
+        cols = []
+        for x in data.columns:
+            if str(x).startswith('Player'):
+                cols.append(x)
+        
+        data.drop(labels=cols, axis=1, inplace=True)
 
-        return data
+        return data, cols
 
 
-    def removeEmpty(data, threshold = 0.5):
+    def removeEmpty(data, target, threshold = 0.3):
         '''
         Delete rows/columns that are empty more than threshold % indicated
 
@@ -87,6 +105,9 @@ class DataManipulation():
         ----------
         data : TYPE pandas.DataFrame
             DESCRIPTION. collected data
+        target: TYPE string
+            DESCRIPTION. name of the target variable. We'll delete any row
+            with a missing value in the target.
         threshold : TYPE, optional
             DESCRIPTION. The default is 0.5.
 
@@ -118,7 +139,7 @@ class DataManipulation():
         return data, delCols
 
     
-    def imputeMissing(data, imputeDict=None):
+    def imputeMissing(data, target, imputeDict=None):
         '''
         Impute missing with mode, mean depending on data type
 
@@ -126,6 +147,9 @@ class DataManipulation():
         ----------
         data : TYPE pandas.DataFrame
             DESCRIPTION. collected data
+        target: TYPE string
+            DESCRIPTION. name of the target variable. We can't impute values 
+            into the target variable.
         imputeDict : TYPE, optional dictionary 
             DESCRIPTION. The default is None. dictionary that indicates the 
             imputing value of each column
@@ -143,6 +167,8 @@ class DataManipulation():
             imputeDict = dict()
         
             for col in data.columns:
+                if col == target:
+                    continue
                 if is_string_dtype(data[col]):
                     imputeDict[col] = data[col].mode()[0]
                 elif is_numeric_dtype(data[col]):
