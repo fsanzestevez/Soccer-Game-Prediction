@@ -11,10 +11,6 @@ from fuzzywuzzy import process
 import json
 import os 
 
-import winsound
-frequency = 2500  # Set Frequency To 2500 Hertz
-duration = 100  # Set Duration To 1000 ms == 1 second
-debug = False
 
 class CreateDB():
     
@@ -26,7 +22,7 @@ class CreateDB():
         self.eplClubs = {'QPR': 'Queens Park Rangers'}
         self.notFound = set()
         self.fullDB = self.loadData()
-        self.fullDB.to_pickle('data/full_DB.pkl')
+        self.fullDB.to_pickle('data/full_DB.pkl', )
         
     def getSeasonDB(self, lineups, odds, players_Fifa):
         clubs = list(lineups['Team'].unique()) \
@@ -49,15 +45,17 @@ class CreateDB():
                 odds.loc[odds['AwayTeam'] == club, 'AwayTeam'] = newClub
         odds['Date'] = pd.to_datetime(odds['Date'])
         lineups['Date'] = pd.to_datetime(lineups['Date'])
-        
+
         seasonDB = odds.merge(lineups, how='left',
                               left_on=['Date', 'HomeTeam'],
                               right_on=['Date', 'Team'],
                               suffixes=[None,'_Home'])
+
         seasonDB = seasonDB.merge(lineups, how='left',
                                   left_on=['Date', 'AwayTeam'],
                                   right_on=['Date', 'Team'],
                                   suffixes=[None, '_Away'])
+
         return seasonDB
                   
     
@@ -147,7 +145,7 @@ class CreateDB():
             each game.
     
         '''
-        winsound.Beep(frequency, duration)
+
         lineups = df.copy()
         for game_id in d.keys():
             game = d[game_id]
@@ -198,8 +196,7 @@ class CreateDB():
             players = pd.read_csv('data/season14-15/players_15.csv')
             odds = pd.read_csv('data/season14-15/EPL_14-15.csv')
             lineups = self.seasonLineups(lineups, d, players)
-            seasonDB = self.getSeasonDB(lineups, odds,
-                                                    players)
+            seasonDB = self.getSeasonDB(lineups, odds, players)
                         
             fullDB = fullDB.append(seasonDB)
         else:
@@ -215,9 +212,11 @@ class CreateDB():
 
                         seasonDB = self.getSeasonDB(lineups, odds,
                                                     players)
-                        
+
                         fullDB = fullDB.append(seasonDB)
-        fullDB.reset_index(inplace=True)    
+
+        fullDB.reset_index(drop=True, inplace=True)  
+
         return fullDB
                
 
