@@ -20,7 +20,7 @@ import pickle
 
 
 class Modelling():
-    def __init__(self, train, test, max_iter=50):
+    def __init__(self, train, test, max_iter=100):
         self.max_iter = max_iter
         self.train_Models(train)
         self.best_models(train, test)
