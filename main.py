@@ -28,4 +28,14 @@ if __name__ == "__main__":
     train = fullDB.iloc[:split_index, :]
     test = fullDB.iloc[split_index:, :]
 
-    models = Modelling(train, test)
+    if os.path.isfile('data/EN_model.pickle'):
+        clf_en = pd.read_pickle('data/EN_model.pickle')
+        clf_gbm = pd.read_pickle('data/GBM_model.pickle')
+        clf_rf = pd.read_pickle('data/RF_model.pickle')
+    else:
+        models = Modelling(train, test)
+        clf_en = models.clf_en
+        clf_gbm = models.clf_gbm
+        clf_rf = models.clf_rf
+        
+    

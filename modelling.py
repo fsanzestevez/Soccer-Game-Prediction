@@ -266,6 +266,7 @@ class Modelling():
             
         clf = OneVsRestClassifier(rfc)
         clf.fit(X_tr, y_tr)
+        self.clf_rf = clf
         score_rf = clf.score(X_test, y_test)
         with open('data/RF_model.pickle', 'wb') as f:
             pickle.dump(clf, f)
@@ -279,6 +280,7 @@ class Modelling():
             
         clf = OneVsRestClassifier(gbm)
         clf.fit(X_tr, y_tr)
+        self.clf_gbm = clf
         score_gbm = clf.score(X_test, y_test)
         with open('data/GBM_model.pickle', 'wb') as f:
             pickle.dump(clf, f)
@@ -289,6 +291,7 @@ class Modelling():
             
         clf = OneVsRestClassifier(en)
         clf.fit(X_tr, y_tr)
+        self.clf_en = clf
         score_en = clf.score(X_test, y_test)
         with open('data/EN_model.pickle', 'wb') as f:
             pickle.dump(clf, f)
@@ -296,3 +299,4 @@ class Modelling():
         print('RF:', score_rf)
         print('GBM:', score_gbm)
         print('EN:', score_en)
+        
