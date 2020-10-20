@@ -47,11 +47,13 @@ class Baseline():
         clf.fit(X_tr, y_tr)
         
         models = Modelling()
-        roc_auc_tr, fig_tr = models.getRoc(clf, 'BaseLine', X_tr, y_tr)
+        roc_auc_tr, fig_tr = models.getRoc(clf, 'BaseLine', X_tr, y_tr,
+                                           'Train')
         self.roc_auc_tr = roc_auc_tr
         score_tr = clf.score(X_tr, y_tr) 
         score_test = clf.score(X_test, y_test) 
-        roc_auc_test, fig_test = models.getRoc(clf, 'BaseLine', X_test, y_test)
+        roc_auc_test, fig_test = models.getRoc(clf, 'BaseLine', X_test, y_test,
+                                               'Test')
         self.roc_auc_test = roc_auc_test
         if step == 'Essentials':
             self.clf_essential = clf
@@ -78,3 +80,4 @@ class Baseline():
                ''.format(roc_auc_test["macro"]))
         
         print('\n====================================\n')
+        input()

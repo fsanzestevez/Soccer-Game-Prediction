@@ -320,18 +320,19 @@ class Modelling():
         
         print(model_name)
         print('Train Score:')
-        # print(clf.score(X_tr, y_tr))
-        roc_auc, fig_tr = self.getRoc(clf, model_name, X_tr, y_tr)
+        print(clf.score(X_tr, y_tr))
+        roc_auc, fig_tr = self.getRoc(clf, model_name, X_tr, y_tr, 'Train')
         print(roc_auc)
         print('Test Score:')
-        # print(clf.score(X_test, y_test))
-        roc_auc, fig_test = self.getRoc(clf, model_name, X_test, y_test)
+        print(clf.score(X_test, y_test))
+        roc_auc, fig_test = self.getRoc(clf, model_name, X_test, y_test,
+                                        'Test')
         print(roc_auc)
         
         return fig_tr, fig_test
         
         
-    def getRoc(self, clf, model_name, X_test, y_test):
+    def getRoc(self, clf, model_name, X_test, y_test, sample):
         n_classes = self.n_classes
         y_score = clf.decision_function(X_test)
         fpr = dict()
@@ -384,7 +385,7 @@ class Modelling():
         plt.ylim([0.0, 1.05])
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
-        plt.title('Some extension of Receiver operating characteristic to multi-class')
+        plt.title(sample)
         plt.legend(loc="lower right")
         plt.show()
         # if model_name == 'ElasticNet':

@@ -15,4 +15,14 @@ The key idea of my proposed solution is to see whether the players rating on the
 Every dataset I gather had a very different structure, and even different names for the same clubs/players that were all solved with the library FuzzyWuzzy (which uses the Levenshtein distance to match strings). All the data wrangling to create the database is in the file 'createDB.py' 
 
 These are the results we have for all the seasons:
-! [Alt text] (C:/Users/Fran/Documents/GitHub/time-series-causalens/figures/all_seasons_results_HT.png)
+![Results for all the seasons](figures/all_seasons_results.png)
+
+As we see, the results change after half time, being more incline towards a draw or a home win rather than an away win. These changes are the important ones, and the ones that will give the money on bets.
+For the most part, the result won't change after halftime:
+
+![Changes in result after half time](figures/changes_in_results.png)
+
+
+https://towardsdatascience.com/time-series-nested-cross-validation-76adba623eb9
+
+
