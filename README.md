@@ -13,3 +13,6 @@ c) From https://www.kaggle.com/stefanoleone992/fifa-20-complete-player-dataset I
 The key idea of my proposed solution is to see whether the players rating on the video game fifa have an impact on the results.
 
 Every dataset I gather had a very different structure, and even different names for the same clubs/players that were all solved with the library FuzzyWuzzy (which uses the Levenshtein distance to match strings). All the data wrangling to create the database is in the file 'createDB.py' 
+
+These are the results we have for all the seasons:
+! [Alt text] (C:/Users/Fran/Documents/GitHub/time-series-causalens/figures/all_seasons_results_HT.png)
