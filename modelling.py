@@ -10,20 +10,23 @@ from dataManipulation import DataManipulation
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.linear_model import ElasticNet
+from sklearn.linear_model import ElasticNet, SGDClassifier
+from sklearn.metrics import roc_curve, auc
 import numpy as np
 import pandas as pd
 import math
 import itertools
 import random
 import pickle
+from scipy import interp
+import matplotlib.pyplot as plt
+from itertools import cycle
 
 
 class Modelling():
-    def __init__(self, train, test, max_iter=100):
+    def __init__(self, max_iter=100):
         self.max_iter = max_iter
-        self.train_Models(train)
-        self.best_models(train, test)
+        self.n_classes = 3
     
     def train_Models(self, train):
         model_params = dict()
@@ -207,10 +210,10 @@ class Modelling():
                 break
 
             params_i = params[random_i]
-            en = ElasticNet(
-                alpha=params_i[0],
-                l1_ratio=params_i[1])
-            
+            en = SGDClassifier(penalty='elasticnet',
+                               alpha=params_i[0],
+                               l1_ratio=params_i[1],
+                               n_jobs=-1)
             clf = OneVsRestClassifier(en)
             clf.fit(X_tr, y_tr)
             score_i = clf.score(X_val, y_val)
@@ -270,6 +273,7 @@ class Modelling():
         score_rf = clf.score(X_test, y_test)
         with open('data/RF_model.pickle', 'wb') as f:
             pickle.dump(clf, f)
+        
         # GBM
         gbm = GradientBoostingClassifier(
                 learning_rate=params_gbm[0],
@@ -284,10 +288,12 @@ class Modelling():
         score_gbm = clf.score(X_test, y_test)
         with open('data/GBM_model.pickle', 'wb') as f:
             pickle.dump(clf, f)
+        
         # EN
-        en = ElasticNet(
-                alpha=params_en[0],
-                l1_ratio=params_en[1])
+        en = SGDClassifier(penalty='elasticnet',
+                               alpha=params_en[0],
+                               l1_ratio=params_en[1],
+                               n_jobs=-1)
             
         clf = OneVsRestClassifier(en)
         clf.fit(X_tr, y_tr)
@@ -300,3 +306,92 @@ class Modelling():
         print('GBM:', score_gbm)
         print('EN:', score_en)
         
+    def prediction(self, clf, model_name, train, test):
+        train = train.copy()
+        test = test.copy()
+        manipulate = DataManipulation(train, test)
+        X_tr = manipulate.x_train.copy()
+        X_test = manipulate.x_test.copy()
+        
+        y_tr = manipulate.y_train.copy()
+        y_test = manipulate.y_test.copy()
+        
+        # self.n_classes = manipulate.n_classes
+        
+        print(model_name)
+        print('Train Score:')
+        # print(clf.score(X_tr, y_tr))
+        roc_auc, fig_tr = self.getRoc(clf, model_name, X_tr, y_tr)
+        print(roc_auc)
+        print('Test Score:')
+        # print(clf.score(X_test, y_test))
+        roc_auc, fig_test = self.getRoc(clf, model_name, X_test, y_test)
+        print(roc_auc)
+        
+        return fig_tr, fig_test
+        
+        
+    def getRoc(self, clf, model_name, X_test, y_test):
+        n_classes = self.n_classes
+        y_score = clf.decision_function(X_test)
+        fpr = dict()
+        tpr = dict()
+        roc_auc = dict()
+        for i in range(3):
+            fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_score[:, i])
+            roc_auc[i] = auc(fpr[i], tpr[i])
+        
+        # Compute micro-average ROC curve and ROC area
+        fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(),
+                                                  y_score.ravel())
+        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+        # First aggregate all false positive rates
+        all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
+        # Then interpolate all ROC curves at this points
+        mean_tpr = np.zeros_like(all_fpr)
+        for i in range(n_classes):
+            mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+        
+        # Finally average it and compute AUC
+        mean_tpr /= n_classes
+        
+        fpr["macro"] = all_fpr
+        tpr["macro"] = mean_tpr
+        roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+        
+        # Plot all ROC curves
+        lw = 2
+        fig = plt.figure()
+        plt.plot(fpr["micro"], tpr["micro"],
+                 label='micro-average ROC curve (area = {0:0.2f})'
+                       ''.format(roc_auc["micro"]),
+                 color='deeppink', linestyle=':', linewidth=4)
+        
+        plt.plot(fpr["macro"], tpr["macro"],
+                 label='macro-average ROC curve (area = {0:0.2f})'
+                       ''.format(roc_auc["macro"]),
+                 color='navy', linestyle=':', linewidth=4)
+        
+        colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
+        for i, color in zip(range(n_classes), colors):
+            plt.plot(fpr[i], tpr[i], color=color, lw=lw,
+                     label='ROC curve of class {0} (area = {1:0.2f})'
+                     ''.format(i, roc_auc[i]))
+        
+        plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Some extension of Receiver operating characteristic to multi-class')
+        plt.legend(loc="lower right")
+        plt.show()
+        # if model_name == 'ElasticNet':
+        #     self.en_ROC = roc_auc
+        # elif model_name == 'RandomForest':
+        #     self.rf_ROC = roc_auc
+        # elif model_name == 'GBM':
+        #     self.gbm_ROC = roc_auc
+        return roc_auc, fig
+    

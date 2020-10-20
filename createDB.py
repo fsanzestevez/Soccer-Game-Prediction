@@ -14,7 +14,7 @@ import os
 
 class CreateDB():
     
-    def __init__(self, folder):
+    def __init__(self, folder='data/'):
         self.folder = folder
         self.uniquePlayers = set()
         self.player2id = {'Chicharito': 178224,
@@ -43,7 +43,7 @@ class CreateDB():
                             'Team'] = newClub
                 odds.loc[odds['HomeTeam'] == club, 'HomeTeam'] = newClub
                 odds.loc[odds['AwayTeam'] == club, 'AwayTeam'] = newClub
-        odds['Date'] = pd.to_datetime(odds['Date'])
+        odds['Date'] = pd.to_datetime(odds['Date'], dayfirst = True)
         lineups['Date'] = pd.to_datetime(lineups['Date'])
 
         seasonDB = odds.merge(lineups, how='left',
@@ -182,14 +182,10 @@ class CreateDB():
             DESCRIPTION.
     
         '''
-        # cols = ['Date', 'Team']
-        # for i in range(1, 12):
-        #     cols.append('Player_'+str(i))
-        #     cols.append('P_'+str(i)+'_Overall')
-        # lineups = pd.DataFrame(columns=cols)
         lineups = pd.DataFrame()
         seasonDB = pd.DataFrame()
         fullDB = pd.DataFrame()
+        debug=False
         if debug:
             d = json.load(open('data/season14-15/season_stats.json', 'r',
                                encoding='utf-8'))

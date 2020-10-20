@@ -10,7 +10,7 @@ import pandas as pd
 import datetime as dt
 from pandas.api.types import is_string_dtype
 from pandas.api.types import is_numeric_dtype
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler, label_binarize
 
 
 class DataManipulation():
@@ -34,9 +34,12 @@ class DataManipulation():
             
             train, self.imputeDict = self.imputeMissing(train, target)
             
-            self.le = LabelEncoder()
+            # self.le = LabelEncoder()
             y_train = train[target].copy()
-            self.y_train = self.le.fit_transform(y_train)
+            y_train = label_binarize(y_train, classes=['H','A','D'])
+            self.n_classes = 3
+            self.y_train = y_train
+            # self.y_train = self.le.fit_transform(y_train)
             train.drop(labels=target, axis=1, inplace=True)
             train = self.scaleDF(train, isTrain=True)
             self.x_train = pd.get_dummies(train)
@@ -49,7 +52,10 @@ class DataManipulation():
             test = self.dropCsTest(test)
             test, _ = self.imputeMissing(test, target, self.imputeDict)
             y_test = test[target].copy()
-            self.y_test = self.le.transform(y_test)
+            # self.y_test = self.le.transform(y_test)
+            y_test = label_binarize(y_test, classes=['H','A','D'])
+            self.n_classes = 3
+            self.y_test = y_test
             test.drop(labels=target, axis=1, inplace=True)
             test = pd.get_dummies(test)
             test = self.columnConsistency(test)
@@ -234,7 +240,16 @@ class DataManipulation():
         return df, imputeDict
     
     def create_features(self, df):
-
+        try:
+            df['Date'].dt
+        except AttributeError:
+            try:
+                df['Date'] = df['Date'].map(dt.datetime.fromordinal)
+                df['Date'] = pd.to_datetime(df['Date'], errors = 'coerce')
+            except TypeError:
+                df['Date'] = pd.to_datetime(df['Date'], errors = 'coerce')
+        
+        
         df['hour'] = df['Date'].dt.hour
         df['dayofweek'] = df['Date'].dt.dayofweek
         df['quarter'] = df['Date'].dt.quarter
