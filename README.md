@@ -6,9 +6,10 @@ This problem is approached as a time-series problem, meaning that the time of oc
 
 ## Data
 I created the whole database from different datasets that I have found online: 
-a) From https://www.football-data.co.uk/ I gathered the results and betting odds from the most famous betting companies since the 1994/95 season.
-b) From https://www.kaggle.com/shubhmamp/english-premier-league-match-data I was able to find the lineups and match stats for every game in between 2014 to 2018.
-c) From https://www.kaggle.com/stefanoleone992/fifa-20-complete-player-dataset I found the attributes of all the players from the game FIFA since 2014.
+1. From https://www.football-data.co.uk/ I gathered the results and betting odds from the most famous betting companies since the 1994/95 season.
+2. From https://www.kaggle.com/shubhmamp/english-premier-league-match-data I was able to find the lineups and match stats for every game in between 2014 to 2018.
+3. From https://www.kaggle.com/stefanoleone992/fifa-20-complete-player-dataset I found the attributes of all the players from the game FIFA since 2014.
+
 
 The key idea of my proposed solution is to see whether the players rating on the video game Fifa have an impact on the results.
 
@@ -34,17 +35,17 @@ I used a linear regression as a baseline model to see how the results improve wh
 #### Baseline model
 For the baseline model I used a simple linear regression and checked the results using only the historical results (FT and HT), then adding the betting odds, and finally adding the lineups and players' ratings.
 
-1) Using only historical results:
+1. Using only historical results:
 
 ![ROC with Train set using only the history of results](figures/Baseline_Essential_Train.png)
 ![ROC with Test set using only the history of results](figures/Baseline_Essential_Test.png)
 
-2) Adding the betting odds:
+2. Adding the betting odds:
 
 ![ROC with Train set adding betting odds](figures/Baseline_bettingOdds_Train.png)
 ![ROC with Test set adding betting odds](figures/Baseline_bettingOdds_Test.png)
 
-3) Adding players' ratings:
+3. Adding players' ratings:
 
 ![ROC with Train set adding players' ratings](figures/Baseline_players_Train.png)
 ![ROC with Test set adding players' ratings](figures/Baseline_players_Test.png)
@@ -70,12 +71,12 @@ Time to show the results and see how they compare with the baseline approach:
 1) ElasticNet: a linear regression like the baseline model adding regularization and hyperparameter tuning.
 
 ![Train results for Elastic Net](figures/train_EN.png)
-![Test results for Elastic Net](figures/test_EN.png)
+![Test results for Elastic Net](figures/Test_EN.png)
 
 2) GBM: a tree based algorithm that tries to improve the error with every iteration.
 
-![Train results for GBM](figures/train_GBM.png)
-![Test results for GBM](figures/test_GBM.png)
+![Train results for GBM](figures/Train_GBM.png)
+![Test results for GBM](figures/Test_GBM.png)
 
 
 Using the average between micro and macro AUC results, this is how the forecasting improves with each model and data:
