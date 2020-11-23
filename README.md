@@ -15,6 +15,7 @@ The key idea of my proposed solution is to see whether the players rating on the
 Every data set I gather had a very different structure, and even different names for the same clubs/players that were all solved with the library FuzzyWuzzy (which uses the Levenshtein distance to match strings). All the data wrangling to create the database is in the file 'createDB.py' 
 
 These are the results we have for all the seasons:
+
 ![Results for all the seasons](figures/all_seasons_results.png)
 
 As we see, the results change a little after half time, being more inclined towards a draw or a home win rather than an away win. These changes are the important ones, and the ones that will give you the money on bets.
@@ -39,10 +40,12 @@ For the baseline model I used a simple linear regression and checked the results
 ![ROC with Test set using only the history of results](figures/Baseline_Essential_Test.png)
 
 2) Adding the betting odds:
+
 ![ROC with Train set adding betting odds](figures/Baseline_bettingOdds_Train.png)
 ![ROC with Test set adding betting odds](figures/Baseline_bettingOdds_Test.png)
 
 3) Adding players' ratings:
+
 ![ROC with Train set adding players' ratings](figures/Baseline_players_Train.png)
 ![ROC with Test set adding players' ratings](figures/Baseline_players_Test.png)
 

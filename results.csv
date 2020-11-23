@@ -1,0 +1,1 @@
+Model,Train Micro,Train Macro,Improvement Train,Test Micro,Test Macro,Improvement TestBaseline ,0.7,0.67,0.0%,0.53,0.52,0.0%Baseline Betting Odds,0.84,0.82,21.2%,0.75,0.73,41.0%Baseline Players,0.86,0.85,24.8%,0.72,0.7,35.2%Elastic Net,0.83,0.82,20.4%,0.77,0.75,44.8%Gradient Boosting Machine,0.94,0.94,37.2%,0.74,0.72,39.0%
